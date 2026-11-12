@@ -6,7 +6,7 @@ Input can be FM-demodulated audio or an IQ recording, at any sample rate. The sy
 
 ## Use
 
-Python 3.9 or newer and numpy.
+Python 3.11 or newer and numpy.
 
 ```
 pip install numpy
