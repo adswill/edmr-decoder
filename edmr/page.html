@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>eDMR</title>
+<style>
+:root { color-scheme: light dark; --rule: color-mix(in srgb, CanvasText 22%, Canvas); --faint: color-mix(in srgb, CanvasText 6%, Canvas); }
+html, body { height: 100%; margin: 0; }
+body { display: grid; grid-template-rows: auto auto auto minmax(120px, 1fr) 176px auto; font: 13px system-ui, sans-serif; background: Canvas; color: CanvasText; }
+#bar { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-bottom: 1px solid var(--rule); background: var(--faint); }
+#bar label { margin-left: 8px; }
+#bar select#device { max-width: 260px; }
+#bar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+#fall { border-bottom: 1px solid var(--rule); background: #000; position: relative; height: 96px; }
+#fall canvas { position: absolute; left: 0; top: 16px; width: 100%; height: 80px; image-rendering: pixelated; }
+#scale { position: absolute; left: 0; top: 0; right: 0; height: 16px; background: var(--faint); color: GrayText; font: 10px ui-monospace, Consolas, monospace; border-bottom: 1px solid var(--rule); }
+#scale span { position: absolute; top: 2px; transform: translateX(-50%); }
+body.idle #fall { display: none; }
+body.idle { grid-template-rows: auto auto minmax(120px, 1fr) 176px auto; }
+#lanes { display: grid; grid-template-columns: 54px 1fr; border-bottom: 1px solid var(--rule); font: 11px ui-monospace, Consolas, monospace; }
+#lanes div { display: grid; grid-template-rows: repeat(3, 15px) 14px; color: GrayText; padding-left: 6px; align-items: center; border-right: 1px solid var(--rule); }
+#lanes canvas { width: 100%; height: 59px; display: block; cursor: crosshair; }
+#mid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 0; }
+#list { overflow: auto; }
+table { border-collapse: collapse; width: 100%; font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
+th { position: sticky; top: 0; background: var(--faint); border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule); text-align: left; font: 12px system-ui, sans-serif; padding: 2px 6px; z-index: 1; }
+td { padding: 1px 6px; white-space: nowrap; border-right: 1px solid var(--faint); }
+td:last-child { white-space: normal; width: 100%; }
+td i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; }
+tbody tr:nth-child(even) { background: var(--faint); }
+tbody tr.sel { background: Highlight; color: HighlightText; }
+tr.idle td, tr.rep td:nth-child(5) { color: GrayText; }
+tr.sel td { color: inherit !important; }
+#towers { border-left: 1px solid var(--rule); overflow: auto; }
+#towers h2 { font: 12px system-ui, sans-serif; margin: 0; padding: 2px 8px; background: var(--faint); border-bottom: 1px solid var(--rule); position: sticky; top: 0; }
+#towers section { padding: 5px 8px 7px; border-bottom: 1px solid var(--rule); font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; }
+#towers section b { font: 600 13px system-ui, sans-serif; display: block; margin-bottom: 2px; }
+#towers dl { display: grid; grid-template-columns: 74px 1fr; margin: 0; gap: 1px 4px; }
+#towers dt { color: GrayText; }
+#towers dd { margin: 0; overflow-wrap: anywhere; }
+#towers p { color: GrayText; padding: 6px 8px; margin: 0; }
+#lower { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); border-top: 1px solid var(--rule); min-height: 0; }
+#detail, #hex { overflow: auto; padding: 4px 8px; font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre; margin: 0; }
+#hex { border-left: 1px solid var(--rule); }
+#status { display: flex; gap: 16px; padding: 2px 8px; border-top: 1px solid var(--rule); background: var(--faint); font-size: 12px; }
+#status span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#status .err { color: #c00; }
+</style>
+</head>
+<body class="idle">
+<div id="bar">
+  <button id="open">Open…</button>
+  <input id="file" type="file" accept=".wav" hidden>
+  <span class="sep"></span>
+  <label for="device">Input</label>
+  <select id="device"><option value="">System default</option></select>
+  <button id="listen">Start</button>
+  <span class="sep"></span>
+  <label><input type="checkbox" id="showidle"> Idle</label>
+  <label for="slotsel">Slot</label>
+  <select id="slotsel"><option value="0">All</option><option>1</option><option>2</option><option>3</option></select>
+  <span class="sep"></span>
+  <button id="clear">Clear</button>
+  <button id="save">Export CSV</button>
+</div>
+<div id="fall"><div id="scale"></div><canvas id="wf" width="1024" height="80"></canvas></div>
+<div id="lanes"><div><span>Slot 1</span><span>Slot 2</span><span>Slot 3</span><span></span></div><canvas id="map" height="59"></canvas></div>
+<div id="mid">
+  <div id="list">
+    <table>
+      <thead><tr><th>No.</th><th>Time</th><th>Slot</th><th>Tower</th><th>Type</th><th>Info</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div id="towers"><h2>Towers</h2><div id="towerlist"><p>None heard</p></div></div>
+</div>
+<div id="lower"><pre id="detail"></pre><pre id="hex"></pre></div>
+<div id="status"><span id="msg">Ready</span><span id="lock"></span><span id="lvl"></span><span id="count">0 messages</span></div>
+<script>
+const $ = id => document.getElementById(id);
+const TOP = 6000, WINDOW = 60;
+const COLOR = {id: '#3b7dd8', clock: '#2e9e5b', names: '#8a56c2', neighbours: '#17a2a2', settings: '#7a8aa0', poll: '#e08a1e', unit: '#d6453d', idle: '#9a9a9a55', unknown: '#d13fb0'};
+let log = [], sel = -1, live = false, span = [0, WINDOW], startWall = 0;
+let ctx = null, stream = null, proc = null, analyser = null, pending = [], pendingN = 0, chain = Promise.resolve(), timer = 0;
+
+function status(text, err) { $('msg').textContent = text; $('msg').className = err ? 'err' : ''; }
+function hms(ms) { const d = new Date(ms); return d.toTimeString().slice(0, 8) + '.' + String(Math.floor(d.getMilliseconds() / 100)); }
+function towerName(key) { if (!key) return ''; const p = key.split('-'); return p[1].padStart(2, '0') + '/' + p[2]; }
+function shown(e) { return (e.kind != 'idle' || $('showidle').checked) && ($('slotsel').value == 0 || e.slot == $('slotsel').value); }
+
+function row(e, i) {
+  const tr = $('rows').insertRow();
+  tr.dataset.i = i;
+  const cells = [i + 1, e.shown, e.slot, towerName(e.tower), '', e.text];
+  cells.forEach(v => tr.insertCell().textContent = v);
+  const sw = document.createElement('i'); sw.style.background = COLOR[e.kind];
+  tr.cells[4].append(sw, e.type);
+  if (e.kind == 'idle') tr.className = 'idle';
+  if (e.repeat) tr.classList.add('rep');
+  tr.onclick = () => select(i);
+  return tr;
+}
+
+function add(events, stamp) {
+  const list = $('list'), follow = list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+  for (const e of events) {
+    e.shown = stamp(e); log.push(e);
+    if (shown(e)) row(e, log.length - 1);
+  }
+  $('count').textContent = log.length + ' bursts';
+  if (follow) list.scrollTop = list.scrollHeight;
+  drawMap();
+}
+
+function refill() {
+  $('rows').innerHTML = '';
+  log.forEach((e, i) => { if (shown(e)) row(e, i); });
+  if (log[sel]) select(sel);
+}
+
+function select(i) {
+  const old = $('rows').querySelector('tr.sel'); if (old) old.classList.remove('sel');
+  sel = i;
+  const e = log[i];
+  if (!e) { $('detail').textContent = $('hex').textContent = ''; drawMap(); return; }
+  const tr = $('rows').querySelector('tr[data-i="' + i + '"]');
+  if (tr) { tr.classList.add('sel'); tr.scrollIntoView({block: 'nearest'}); }
+  const f = [['Type', e.type], ['Time', e.shown], ['Slot', e.slot]];
+  if (e.tower) f.push(['Tower', towerName(e.tower)]);
+  if (e.kind == 'id') f.push(['Network code', e.net], ['Area', e.area], ['Site', e.site], ['Frame number', e.frame]);
+  if (e.kind == 'clock' && e.unix) f.push(['Network time', new Date(e.unix * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'], ['Local offset', e.utc + ' min'], ['Counter', e.secs]);
+  if (e.kind == 'names') e.names.forEach(n => f.push([n.kind == 7 ? 'Label' : 'Name (level ' + n.level + ')', n.name]));
+  if (e.kind == 'neighbours') e.elements.forEach(([n, v]) => f.push(['Entry ' + n, v ? 'channel ' + (v[1] > 0 ? '+' : '') + v[1] + ', slots ' + [1, 2, 3].filter(k => v[0] >> (k - 1) & 1).join(' ') : 'empty']));
+  if (e.unit) f.push(['Unit', e.unit]);
+  if (e.kind == 'poll') f.push(['Counter', e.counter]);
+  if (e.kind == 'unit') f.push(['Level', e.level + ' dBm'], ['Value', e.value]);
+  f.push(['Sync pattern', e.sync], ['Symbol errors', e.repeat ? 'recognised as a repeat' : e.errors]);
+  $('detail').textContent = f.map(([k, v]) => (k + ':').padEnd(20) + v).join('\n');
+  const w = e.raw.split(' ');
+  $('hex').textContent = [0, 4, 8, 12].map(a => String(a).padStart(2, '0') + '  ' + w.slice(a, a + 4).join(' ')).join('\n');
+  drawMap();
+}
+
+function drawTowers(towers) {
+  if (!towers.length) { $('towerlist').innerHTML = '<p>None heard</p>'; return; }
+  $('towerlist').textContent = '';
+  for (const t of towers) {
+    const s = document.createElement('section'), dl = document.createElement('dl'), b = document.createElement('b');
+    b.textContent = (t.network || 'Network ' + t.net) + '  ' + String(t.area).padStart(2, '0') + '/' + t.site;
+    const off = t.utc == null ? '' : 'UTC' + (t.utc < 0 ? '-' : '+') + Math.floor(Math.abs(t.utc) / 60) + ':' + String(Math.abs(t.utc) % 60).padStart(2, '0');
+    const nb = Object.values(t.neighbours).map(v => (v[1] > 0 ? '+' : '') + v[1]).join(' ');
+    const fields = [['Names', t.names.join(', ')], ['Slot', t.slot], ['Clock', t.unix ? new Date(t.unix * 1000).toISOString().replace('T', ' ').slice(0, 19) : ''], ['Offset', off], ['Neighbours', nb], ['Sync', t.sync], ['Messages', t.count]];
+    for (const [k, v] of fields) { if (v === '' || v == null) continue; const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; dl.append(dt, dd); }
+    s.append(b, dl); $('towerlist').append(s);
+  }
+}
+
+function drawMap() {
+  const c = $('map'), w = c.width = c.clientWidth, g = c.getContext('2d'), css = getComputedStyle(document.body);
+  const [a, b] = span, x = t => (t - a) / (b - a) * w;
+  g.clearRect(0, 0, w, c.height);
+  g.strokeStyle = css.getPropertyValue('--rule'); g.fillStyle = 'GrayText'; g.font = '10px ui-monospace, Consolas, monospace';
+  for (let k = 1; k <= 3; k++) { g.beginPath(); g.moveTo(0, k * 15 + .5); g.lineTo(w, k * 15 + .5); g.stroke(); }
+  const step = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600, 1200].find(s => (b - a) / s <= 12) || 1800;
+  for (let t = Math.ceil(a / step) * step; t < b; t += step) { g.fillText(live ? hms(startWall + t * 1000).slice(0, 8) : t + ' s', x(t) + 3, 56); g.beginPath(); g.moveTo(x(t) + .5, 45); g.lineTo(x(t) + .5, 59); g.stroke(); }
+  const bw = Math.max(2, 0.0467 / (b - a) * w);
+  for (const e of log) { if (e.t < a || e.t > b) continue; g.fillStyle = COLOR[e.kind]; g.fillRect(x(e.t), (e.slot - 1) * 15 + 2, bw, 11); }
+  const e = log[sel];
+  if (e && e.t >= a && e.t <= b) { g.strokeStyle = css.color; g.strokeRect(x(e.t) - 1.5, (e.slot - 1) * 15 + .5, bw + 3, 14); }
+}
+
+$('map').onclick = ev => {
+  const r = $('map').getBoundingClientRect(), t = span[0] + (ev.clientX - r.left) / r.width * (span[1] - span[0]), slot = Math.floor((ev.clientY - r.top) / 15) + 1;
+  let best = -1, d = 1e9;
+  log.forEach((e, i) => { if (e.slot == slot && shown(e) && Math.abs(e.t - t) < d) { d = Math.abs(e.t - t); best = i; } });
+  if (best >= 0) select(best);
+};
+
+async function openFile(f) {
+  if (live) stop();
+  status('Decoding ' + f.name + '…');
+  try {
+    const j = await (await fetch('/file', {method: 'POST', body: f})).json();
+    if (j.error) { status(f.name + ': ' + j.error, true); return; }
+    reset(); span = [0, Math.max(1, j.info.seconds)];
+    add(j.events, e => e.t.toFixed(2)); drawTowers(j.towers);
+    const i = j.info;
+    status(f.name + ' — ' + (i.kind == 'iq' ? 'IQ' : 'FM audio') + ', ' + i.rate + ' Hz, ' + i.seconds + ' s — ' + i.decoded + ' bursts decoded, ' + i.unreadable + ' unreadable');
+    $('lock').textContent = 'Clock ' + i.sps + (i.inverted ? ', inverted' : '');
+  } catch (e) { status(f.name + ': ' + e.message, true); }
+}
+
+function reset() { $('rows').innerHTML = ''; log = []; sel = -1; select(-1); $('count').textContent = '0 bursts'; drawTowers([]); $('lock').textContent = ''; }
+
+async function devices() {
+  const s = $('device'), keep = s.value;
+  const d = (await navigator.mediaDevices.enumerateDevices()).filter(x => x.kind == 'audioinput' && x.deviceId && x.deviceId != 'default');
+  s.length = 1;
+  d.forEach((x, i) => s.add(new Option(x.label || 'Input ' + (i + 1), x.deviceId)));
+  s.value = [...s.options].some(o => o.value == keep) ? keep : '';
+}
+
+function flush() {
+  const pcm = new Int16Array(pendingN); let o = 0;
+  for (const p of pending) for (let i = 0; i < p.length; i++) pcm[o++] = Math.max(-32768, Math.min(32767, p[i] * 32767));
+  pending = []; pendingN = 0;
+  const wall = startWall;
+  chain = chain.then(() => fetch('/audio?rate=' + ctx.sampleRate, {method: 'POST', body: pcm.buffer})).then(r => r.json()).then(j => {
+    if (!live) return;
+    const s = j.status;
+    span = [Math.max(0, s.seconds - WINDOW), Math.max(WINDOW, s.seconds)];
+    if (j.events.length) { add(j.events, e => hms(wall + e.t * 1000)); drawTowers(j.towers); } else drawMap();
+    $('lock').textContent = s.locked ? 'Locked, clock ' + s.sps + (s.inverted ? ', inverted' : '') : 'Searching';
+  }).catch(() => status('Decoder not reachable', true));
+}
+
+const PAL = (() => {
+  const stops = [[0, 0, 0], [0, 0, 140], [0, 170, 220], [240, 230, 40], [230, 40, 20], [255, 255, 255]], p = new Uint8Array(256 * 3);
+  for (let i = 0; i < 256; i++) { const x = i / 255 * (stops.length - 1), a = Math.min(stops.length - 2, Math.floor(x)), f = x - a; for (let c = 0; c < 3; c++) p[i * 3 + c] = stops[a][c] + (stops[a + 1][c] - stops[a][c]) * f; }
+  return p;
+})();
+
+function waterfall() {
+  if (!analyser) return;
+  const c = $('wf'), g = c.getContext('2d'), bins = new Float32Array(analyser.frequencyBinCount);
+  analyser.getFloatFrequencyData(bins);
+  g.drawImage(c, 0, 1);
+  const line = g.createImageData(c.width, 1), n = TOP / (ctx.sampleRate / 2) * bins.length;
+  for (let x = 0; x < c.width; x++) {
+    const v = bins[Math.floor(x / c.width * n)], k = Math.max(0, Math.min(255, Math.round((v + 105) / 75 * 255))) * 3;
+    line.data.set([PAL[k], PAL[k + 1], PAL[k + 2], 255], x * 4);
+  }
+  g.putImageData(line, 0, 0);
+  const t = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(t);
+  let p = 0; for (const v of t) p += v * v;
+  $('lvl').textContent = 'Level ' + (p ? (10 * Math.log10(p / t.length)).toFixed(0) : '-inf') + ' dBFS';
+}
+
+async function start() {
+  try {
+    const id = $('device').value;
+    stream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: id ? {exact: id} : undefined, echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+  } catch (e) { status('Cannot open audio input: ' + e.message, true); return; }
+  await devices();
+  await fetch('/reset', {method: 'POST'});
+  reset(); live = true; span = [0, WINDOW];
+  ctx = new AudioContext();
+  const src = ctx.createMediaStreamSource(stream), mute = ctx.createGain();
+  analyser = ctx.createAnalyser(); analyser.fftSize = 1024; analyser.smoothingTimeConstant = 0; src.connect(analyser);
+  proc = ctx.createScriptProcessor(4096, 1, 1); mute.gain.value = 0; src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+  startWall = Date.now(); pending = []; pendingN = 0;
+  proc.onaudioprocess = e => { pending.push(new Float32Array(e.inputBuffer.getChannelData(0))); pendingN += e.inputBuffer.length; if (pendingN >= ctx.sampleRate / 4) flush(); };
+  document.body.classList.remove('idle'); $('listen').textContent = 'Stop';
+  status('Receiving from ' + $('device').selectedOptions[0].textContent + ' at ' + ctx.sampleRate + ' Hz');
+  timer = setInterval(waterfall, 40);
+  drawMap();
+}
+
+function stop() {
+  clearInterval(timer); live = false;
+  if (proc) proc.disconnect();
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  if (ctx) ctx.close();
+  ctx = stream = proc = analyser = null;
+  document.body.classList.add('idle'); $('listen').textContent = 'Start'; $('lvl').textContent = '';
+  status('Stopped'); drawMap();
+}
+
+for (let f = 0; f <= TOP; f += 1000) { const s = document.createElement('span'); s.style.left = Math.min(98.5, Math.max(1.5, f / TOP * 100)) + '%'; s.textContent = f / 1000 + ' kHz'; $('scale').append(s); }
+$('open').onclick = () => $('file').click();
+$('file').onchange = e => { if (e.target.files[0]) openFile(e.target.files[0]); e.target.value = ''; };
+$('listen').onclick = () => live ? stop() : start();
+$('device').onchange = () => { if (live) { stop(); start(); } };
+$('showidle').onchange = $('slotsel').onchange = refill;
+$('clear').onclick = () => { reset(); drawMap(); };
+$('save').onclick = () => {
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const out = ['no,time,slot,tower,type,info,words'].concat(log.map((e, i) => [i + 1, e.shown, e.slot, towerName(e.tower), e.type, e.text, e.raw].map(q).join(',')));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out.join('\r\n') + '\r\n'], {type: 'text/csv'})); a.download = 'edmr.csv'; a.click();
+};
+addEventListener('keydown', e => {
+  if (e.key != 'ArrowDown' && e.key != 'ArrowUp') return;
+  const rows = [...$('rows').rows], k = rows.findIndex(r => r.dataset.i == sel), n = rows[k + (e.key == 'ArrowDown' ? 1 : -1)];
+  if (n) { select(+n.dataset.i); e.preventDefault(); }
+});
+addEventListener('resize', drawMap);
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) openFile(e.dataTransfer.files[0]); });
+if (navigator.mediaDevices) { devices(); navigator.mediaDevices.addEventListener('devicechange', devices); }
+drawMap();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edmr-decoder"
+version = "1.0.0"
+description = "eDMR control channel decoder"
+requires-python = ">=3.9"
+dependencies = ["numpy"]
+
+[project.scripts]
+edmr = "edmr.__main__:main"
+
+[tool.setuptools]
+packages = ["edmr"]
+
+[tool.setuptools.package-data]
+edmr = ["page.html"]
