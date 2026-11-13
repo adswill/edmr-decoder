@@ -179,8 +179,12 @@ $('map').onclick = ev => {
 async function openFile(f) {
   if (live) stop();
   status('Decoding ' + f.name + '…');
+  let busy = true;
+  const poll = setInterval(() => fetch('/progress').then(r => r.json()).then(p => {
+    if (busy && p.done != null) status('Decoding ' + f.name + '… ' + Math.round(p.done * 100) + ' %');
+  }).catch(() => {}), 500);
   try {
-    const j = await (await fetch('/file', {method: 'POST', body: f})).json();
+    const j = await (await fetch('/file', {method: 'POST', body: f}).finally(() => { busy = false; clearInterval(poll); })).json();
     if (j.error) { status(f.name + ': ' + j.error, true); return; }
     reset(); span = [0, Math.max(1, j.info.seconds)];
     add(j.events, e => e.t.toFixed(2)); drawTowers(j.towers);

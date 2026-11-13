@@ -12,6 +12,21 @@ def _clock(unix):
     return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(unix)) if unix else "-"
 
 
+def _progress(path):
+    """Percentage on stderr while a file decodes, when stderr is a terminal."""
+    if not sys.stderr.isatty():
+        return None
+    last = [-1]
+
+    def show(f):
+        pct = int(f * 100)
+        if pct != last[0]:
+            last[0] = pct
+            sys.stderr.write("\r%s: %d %%" % (path, pct) if pct < 100 else "\r\033[K")
+            sys.stderr.flush()
+    return show
+
+
 def print_report(path, events, towers, info, show_idle=False, raw=False, summary=False):
     kind = "IQ" if info["kind"] == "iq" else "FM audio"
     print("%s  (%s, %d Hz, %.0f s)" % (path, kind, info["rate"], info["seconds"]))
@@ -60,7 +75,7 @@ def main(argv=None):
     status = 0
     for path in a.files:
         try:
-            results, info = decode_file(path, sps=a.sps)
+            results, info = decode_file(path, sps=a.sps, progress=_progress(path))
         except (OSError, ValueError) as e:
             print("%s: %s" % (path, e), file=sys.stderr)
             status = 1

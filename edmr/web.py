@@ -15,6 +15,7 @@ from .pipeline import decode_file
 PAGE = Path(__file__).with_name("page.html")
 _lock = threading.Lock()
 _live = {"session": None}
+_file = {"done": None}                   # share of the current file decode, for the page's progress line
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -32,8 +33,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if urlparse(self.path).path == "/":
+        path = urlparse(self.path).path
+        if path == "/":
             self._send(PAGE.read_bytes(), "text/html; charset=utf-8")
+        elif path == "/progress":
+            self._send({"done": _file["done"]})
         else:
             self._send(b"", "text/plain", 404)
 
@@ -42,7 +46,10 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         try:
             if url.path == "/file":
-                results, info = decode_file(body)
+                try:
+                    results, info = decode_file(body, progress=lambda f: _file.update(done=round(f, 3)))
+                finally:
+                    _file["done"] = None
                 events, towers = events_of(results, info["sps"])
                 self._send({"info": info, "towers": towers, "events": events})
             elif url.path == "/audio":

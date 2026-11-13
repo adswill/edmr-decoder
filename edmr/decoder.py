@@ -98,14 +98,17 @@ def first_pass(bursts):
     return out
 
 
-def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0, match_lead=90.0, prior=None):
+def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0, match_lead=90.0, prior=None,
+           progress=None):
     """Decode all bursts of a recording.
 
     x: discriminator signal at 12 kHz, bursts: output of the finder, sps: samples per symbol.
     prior: optional Counter of word tuples (d["w"]) decoded earlier in the same stream; pass 4 also compares
     weak bursts with these, as it does with the messages of this signal.
+    progress: optional callable, called with the share of the work done (0..1) as the passes go by.
     Returns (results sorted by time, counters). Each result is a dictionary; use accepted() to filter.
     """
+    step = progress or (lambda f: None)
     x = np.clip(np.asarray(x, np.float64), -4000, 4000)
     rows = [[b.ts, b.q, b.dc, b.level] for b in bursts]
     dec = {d["ts"]: d for d in first_pass(bursts) if strict(d)}
@@ -195,6 +198,7 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
     res = [one(r, w) for r in rows]
     n_pass1 = sum(strict(d) for d in res)
 
+    step(0.35)
     # pass 2: refit on everything pass 1 decoded, then retry the failures with a timing search
     a, b = [], []
     for r, d in zip(rows, res):
@@ -210,6 +214,7 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
         if not strict(d) and r[0] in dec:                    # readable as sampled by the finder: keep that reading
             res[i] = dict(dec[r[0]], dt=0.0)
 
+    step(0.55)
     # pass 3: towers send on a strict frame beat, so each decoded burst predicts where its neighbours are;
     # positions the finder missed are decoded directly, without a preamble
     n_grid = 0
@@ -253,6 +258,7 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
         order = np.argsort([d["ts"] for d in res])
         res, rows = [res[i] for i in order], [rows[i] for i in order]
 
+    step(0.8)
     # pass 4: weak bursts on the towers' timing are compared with messages this recording already produced
     # (and with the clock message for the second they fall in). A match needs a low distance and a clear
     # lead over every message of another kind.
@@ -349,6 +355,7 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
                 d.clear()
                 d.update(new)
                 n_match += 1
+        step(0.9)
         # pass 5: the same recognition at positions the finder never flagged, walking along the frame beat
         acc = sorted((d["ts"], r[2], r[3]) for r, d in zip(rows, res) if accepted(d))
         known = np.array(sorted(r[0] for r in rows))
