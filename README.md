@@ -14,6 +14,7 @@ It reads a recording or a live audio input, finds the bursts, decodes the contro
 - [How it works](#how-it-works)
 - [Limits](#limits)
 - [Testing](#testing)
+- [Support](#support)
 
 ## What it decodes
 
@@ -86,3 +87,9 @@ Live input is decoded in overlapping windows that reach 8 s back, once per secon
 ## Testing
 
 `python -m edmr --selftest` generates a tower signal at several clock rates, with inverted polarity, noise, as IQ and as a live stream, and checks the result. The same test runs on Linux and Windows through GitHub Actions.
+
+## Support
+
+If you would like more projects like this, or want to support this one, consider donating.
+
+[![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/adswill)
