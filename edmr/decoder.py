@@ -111,9 +111,11 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
         return (x[np.clip(i[:, None] + _K[None, :], 0, len(x) - 1)] * w).sum(1)
 
     def feats(ts, dc, sc, n0=0, n1=200):
-        k = np.arange(n0, n1)
-        tt = (ts + k[:, None] * sps + _J[None, :] * sps).ravel()
-        return ((interp(tt) - dc) / sc).reshape(len(k), NTAPS)
+        # the taps sit half a symbol apart and the symbols one symbol apart, so neighbouring rows share
+        # all but two positions: interpolate each position once (2 per symbol instead of 17)
+        m = np.arange(2 * n0 - NTAPS // 2, 2 * (n1 - 1) + NTAPS // 2 + 1)
+        v = (interp(ts + m * (0.5 * sps)) - dc) / sc
+        return v[2 * np.arange(n1 - n0)[:, None] + np.arange(NTAPS)[None, :]]
 
     def equalised(ts, dc, sc, w):
         return np.clip((np.c_[feats(ts, dc, sc, 0, 236), np.ones(236)] @ w) * 10, -45, 45)
