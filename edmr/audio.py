@@ -6,6 +6,26 @@ import numpy as np
 RATE = 12000  # internal sample rate, 2.5 samples per symbol
 
 
+_TAPS = np.arange(-7, 9)
+_SIGN = np.where(_TAPS % 2 == 0, 1.0, -1.0) / np.pi
+_CK, _SK = np.cos(np.pi * _TAPS / 8), np.sin(np.pi * _TAPS / 8)
+
+
+def interp_weights(f):
+    """Windowed-sinc weights of the 16 samples i-7 .. i+8 around position i + f (0 <= f < 1).
+
+    Equal to sinc(u) * (0.5 + 0.5 cos(pi u / 8)) with u = f - k, written with three sines and cosines per
+    position instead of two per tap: sin(pi (f - k)) = (-1)^k sin(pi f), and cos of a difference.
+    """
+    f = np.asarray(f, np.float64)[..., None]
+    u = f - _TAPS
+    a = np.pi * f
+    zero = u == 0
+    s = np.sin(a) * _SIGN / np.where(zero, 1.0, u)
+    c = np.cos(a / 8) * _CK + np.sin(a / 8) * _SK
+    return np.where(zero, 1.0, s) * (0.5 + 0.5 * c)
+
+
 def read_wav(source):
     """Return (samples, rate) for a WAV file given as a path or as bytes.
 
@@ -95,8 +115,7 @@ def resample(x, rate, out_rate=RATE):
     for a in range(0, n_out, 1 << 18):
         t = np.arange(a, min(a + (1 << 18), n_out)) * (rate / out_rate)
         i = np.floor(t).astype(np.int64)
-        u = (t - i)[:, None] - k[None, :]
-        w = np.sinc(u) * (0.5 + 0.5 * np.cos(np.pi * u / 8))
+        w = interp_weights(t - i)
         out[a:a + len(t)] = (x[np.clip(i[:, None] + k[None, :], 0, len(x) - 1)] * w).sum(1)
     return out
 

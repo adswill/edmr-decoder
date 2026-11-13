@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .audio import interp_weights
+
 _K = np.arange(-7, 9)
 _TEMPLATE = np.array([3.0 if k & 1 else -3.0 for k in range(16)] + [3.0, 3.0, -3.0])
 _NT = len(_TEMPLATE)
@@ -52,8 +54,7 @@ class _Signal:
     def at(self, t):
         t = np.asarray(t, np.float64)
         i = np.floor(t).astype(np.int64)
-        u = (t - i)[..., None] - _K
-        w = np.sinc(u) * (0.5 + 0.5 * np.cos(np.pi * u / 8))
+        w = interp_weights(t - i)
         return (self.pad[np.clip(i[..., None] + _K + 8, 0, len(self.pad) - 1)] * w).sum(-1)
 
 

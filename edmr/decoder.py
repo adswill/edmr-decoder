@@ -3,6 +3,7 @@ import collections
 
 import numpy as np
 
+from .audio import interp_weights
 from .code import CODEWORDS, LEVELS, ONE_HOT_T, crc_ok, message_bits, with_crc, words_hex
 
 RATE = 12000
@@ -106,8 +107,7 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
 
     def interp(tt):
         i = np.floor(tt).astype(int)
-        u = (tt - i)[:, None] - _K[None, :]
-        w = np.sinc(u) * (0.5 + 0.5 * np.cos(np.pi * u / 8))
+        w = interp_weights(tt - i)
         return (x[np.clip(i[:, None] + _K[None, :], 0, len(x) - 1)] * w).sum(1)
 
     def feats(ts, dc, sc, n0=0, n1=200):
