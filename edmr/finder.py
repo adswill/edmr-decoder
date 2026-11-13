@@ -99,10 +99,14 @@ def find_bursts(x, sps, threshold=0.8):
             t = float(pass_idx[j])
             continue
         ts = t + 0.25 * np.arange(48)
-        nc = corr(ts)
+        # the scan below stops at the first position that leaves the gate; most runs are only a few samples
+        # long, so the fine correlation is worked out up to that position only
+        open_ = (ts < end) & passing[np.minimum(ts.astype(np.int64), len(passing) - 1)]
+        n_open = 48 if open_.all() else int(np.argmin(open_))
+        nc = corr(ts[:n_open])
         hit = None
         for k in range(48):
-            if ts[k] >= end or not passing[int(ts[k])]:
+            if k >= n_open:
                 t = ts[k]
                 break
             if nc[k] > threshold:

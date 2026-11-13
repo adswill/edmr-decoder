@@ -8,7 +8,7 @@ RATE = 12000  # internal sample rate, 2.5 samples per symbol
 
 _TAPS = np.arange(-7, 9)
 _SIGN = np.where(_TAPS % 2 == 0, 1.0, -1.0) / np.pi
-_CK, _SK = np.cos(np.pi * _TAPS / 8), np.sin(np.pi * _TAPS / 8)
+_CK2, _SK2 = 0.5 * np.cos(np.pi * _TAPS / 8), 0.5 * np.sin(np.pi * _TAPS / 8)
 
 
 def interp_weights(f):
@@ -18,12 +18,13 @@ def interp_weights(f):
     position instead of two per tap: sin(pi (f - k)) = (-1)^k sin(pi f), and cos of a difference.
     """
     f = np.asarray(f, np.float64)[..., None]
-    u = f - _TAPS
     a = np.pi * f
-    zero = u == 0
-    s = np.sin(a) * _SIGN / np.where(zero, 1.0, u)
-    c = np.cos(a / 8) * _CK + np.sin(a / 8) * _SK
-    return np.where(zero, 1.0, s) * (0.5 + 0.5 * c)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        w = (np.sin(a) * _SIGN) / (f - _TAPS) * (0.5 + np.cos(a / 8) * _CK2 + np.sin(a / 8) * _SK2)
+    bad = np.isnan(w)                     # 0 / 0 at u = 0, where the weight is 1
+    if bad.any():
+        w[bad] = 1.0
+    return w
 
 
 def read_wav(source):
