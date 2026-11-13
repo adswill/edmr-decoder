@@ -13,6 +13,8 @@ OVERLAP = 0.5                            # ... and the clock search reaches half
 CONTEXT = 8.0                            # once locked, each window reaches this far back: the frame-timing and
                                          # repeat passes need a few dozen decoded bursts around a weak one
 HISTORY = 600                            # messages kept from earlier windows for the repeat pass
+HOLD = 1.0                               # repeats are reported only this far behind the newest audio, so a
+                                         # burst still near the edge can be read in full by the next window
 EMIT = 2.0                               # bursts decoded for the first time are reported up to this far back
 CLOCKS = (2.50000, 2.50339, 2.50089)     # symbol clocks tried until one of them locks
 
@@ -70,6 +72,8 @@ class Session:
         for d in sorted(good, key=lambda d: d["ts"]):
             ta = lo + d["ts"]
             key = int(round(ta / 80))
+            if d["how"] == "match" and ta > end - HOLD * RATE:
+                continue
             if ta < first or key in self.seen or key - 1 in self.seen or key + 1 in self.seen or is_shifted_copy(d):
                 continue
             self.seen.add(key)
