@@ -49,10 +49,14 @@ def strict(d):
 def _column_costs(u, shifts=range(-8, 9)):
     """Distance of every codeword for each of the 13 columns, for every grid start 36 + shift."""
     shs = [sh for sh in shifts if 36 + sh + 156 <= len(u)]
-    pos = np.array([36 + sh + np.arange(156) for sh in shs])
-    c = (u[pos][:, :, None] - LEVELS[pos % 4]) ** 2
-    c = c.reshape(len(shs), 12, 13, 4).transpose(0, 2, 1, 3).reshape(len(shs) * 13, 48).astype(np.float32)
-    return shs, (c @ ONE_HOT_T).reshape(len(shs), 13, 4096)
+    # column c of grid start 36 + sh holds symbols 36 + sh + c + 13 r: it depends on sh + c only, so the
+    # codeword distances are worked out once per value of sh + c (29 of them instead of 17 x 13)
+    s = np.arange(shs[0], shs[-1] + 13)
+    pos = 36 + s[:, None] + 13 * np.arange(12)[None, :]
+    c = ((u[pos][:, :, None] - LEVELS[pos % 4]) ** 2).reshape(len(s), 48).astype(np.float32)
+    per = c @ ONE_HOT_T
+    idx = (np.array(shs) - shs[0])[:, None] + np.arange(13)[None, :]
+    return shs, per[idx]
 
 
 def _digits(i):
