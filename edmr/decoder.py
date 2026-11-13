@@ -98,10 +98,12 @@ def first_pass(bursts):
     return out
 
 
-def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0, match_lead=90.0):
+def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0, match_lead=90.0, prior=None):
     """Decode all bursts of a recording.
 
     x: discriminator signal at 12 kHz, bursts: output of the finder, sps: samples per symbol.
+    prior: optional Counter of word tuples (d["w"]) decoded earlier in the same stream; pass 4 also compares
+    weak bursts with these, as it does with the messages of this signal.
     Returns (results sorted by time, counters). Each result is a dictionary; use accepted() to filter.
     """
     x = np.clip(np.asarray(x, np.float64), -4000, 4000)
@@ -275,6 +277,10 @@ def decode(x, bursts, sps, kind="audio", grid=True, match=True, match_cost=150.0
 
         count = collections.Counter(tuple(d["w"]) for d in good)
         first = {tuple(d["w"]): d for d in good}
+        for k, c in (prior or {}).items():
+            count[k] += c
+            if k not in first:
+                first[k] = _fields("".join(k))
         cands = [(k, kind_of(first[k])) for k, c in count.items() if c >= 2 and kind_of(first[k]) != "time"]
         clocks = [d for d in good if d["x"][0] == "9fb"]
         toff = float(np.median([clock_value(d) - d["t"] for d in clocks])) if clocks else None
