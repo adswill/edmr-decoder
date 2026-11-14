@@ -13,6 +13,7 @@ It reads a recording or a live audio input, finds the bursts, decodes the contro
 - [Output](#output)
 - [How it works](#how-it-works)
 - [Limits](#limits)
+- [Licence](#licence)
 - [Testing](#testing)
 - [Support](#support)
 
@@ -93,3 +94,7 @@ Live input is decoded in overlapping windows that reach 8 s back, once per secon
 If you would like more projects like this, or want to support this one, consider donating.
 
 [![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/adswill)
+
+## Licence
+
+The source is published to be read, built, run and improved through pull requests. It may not be redistributed, copied into other software or published in changed form: see [LICENSE](LICENSE).
