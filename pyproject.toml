@@ -8,6 +8,8 @@ version = "1.0.0"
 description = "eDMR control channel decoder"
 requires-python = ">=3.11"
 dependencies = ["numpy"]
+license = {file = "LICENSE"}
+authors = [{name = "Kristijonas Adomaitis (adswill)"}]
 
 [project.scripts]
 edmr = "edmr.__main__:main"

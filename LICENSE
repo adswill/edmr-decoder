@@ -1,6 +1,6 @@
-edmr-decoder Source Licence, version 1.0
+edmr-decoder Source Licence, version 1.1
 
-Copyright (c) 2026 adswill. All rights reserved.
+Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
 
 This is not an open-source licence. The source code is published so that it
 can be read, checked, built, and improved through contributions to this
@@ -9,11 +9,12 @@ project. Nothing else is permitted.
 1. What you may do
 
    a. Read and study the source code.
-   b. Download, build and run the software for your own use, as it is or with
-      your own changes.
+   b. Download, build and run the software for your own personal use, as it
+      is or with your own changes.
    c. Change the source code in order to offer the change back to this project
-      (for example as a pull request to https://github.com/adswill/edmr-decoder), and keep a
-      copy of the project for that purpose, including a fork on GitHub.
+      (for example as a pull request to https://github.com/adswill/edmr-decoder),
+      and keep a copy of the project for that purpose, including a fork on
+      GitHub.
 
 2. What you may not do without written permission from the copyright holder
 
@@ -22,8 +23,15 @@ project. Nothing else is permitted.
       unchanged, except as far as 1(c) needs it.
    b. Copy any part of the source code into other software, or publish
       software derived from it.
-   c. Offer the software, or a service built on it, to others.
-   d. Remove or change this licence or the copyright notices.
+   c. Translate, port or rewrite the source code, in whole or in part, into
+      another programming language or form, by hand or with automated tools
+      (including AI code generators), or write software by closely following
+      the source code. Such work is software derived from it under 2(b).
+   d. Use the source code, or any part of it, to train, fine-tune, or prompt
+      a machine-learning model to reproduce, translate or imitate it.
+   e. Offer the software, or a service built on it, to others.
+   f. Remove, hide or change this licence, the NOTICE file, or the copyright
+      notices in any file.
 
 3. Contributions
 
@@ -33,7 +41,10 @@ project. Nothing else is permitted.
 
 4. Ending
 
-   Your permissions under this licence end at once if you break its terms.
+   Your permissions under this licence end at once, and without notice, if you
+   break any of its terms. The copyright holder keeps every right and remedy
+   under copyright law, including removal requests for copies published
+   without permission.
 
 5. No warranty
 
@@ -44,3 +55,6 @@ project. Nothing else is permitted.
    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
    OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE.
+
+For permission beyond these terms, open an issue at
+https://github.com/adswill/edmr-decoder/issues.

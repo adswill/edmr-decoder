@@ -97,4 +97,6 @@ If you would like more projects like this, or want to support this one, consider
 
 ## Licence
 
-The source is published to be read, built, run and improved through pull requests. It may not be redistributed, copied into other software or published in changed form: see [LICENSE](LICENSE).
+Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+
+This is not open source. The code is published to be read, run and improved through pull requests to this repository. Copying any part of it into other software, redistributing it, porting or rewriting it in another language (by hand or with AI tools), using it to train AI models, and publishing changed versions are all forbidden without written permission. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

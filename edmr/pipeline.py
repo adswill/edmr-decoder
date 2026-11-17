@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+# edmr-decoder Source Licence 1.1: no copying, redistribution or porting. See LICENSE.
 """From a recording to decoded bursts: clock and polarity are worked out from the signal."""
 import numpy as np
 

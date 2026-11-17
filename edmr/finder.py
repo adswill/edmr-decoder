@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+# edmr-decoder Source Licence 1.1: no copying, redistribution or porting. See LICENSE.
 """Burst finder: locates the preamble and sync of each burst in the discriminator signal."""
 from dataclasses import dataclass
 

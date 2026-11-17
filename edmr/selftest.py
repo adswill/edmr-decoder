@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+# edmr-decoder Source Licence 1.1: no copying, redistribution or porting. See LICENSE.
 """Self-test on generated signals. Used by the automated tests and by `python -m edmr --selftest`."""
 import numpy as np
 

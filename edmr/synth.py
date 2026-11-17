@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+# edmr-decoder Source Licence 1.1: no copying, redistribution or porting. See LICENSE.
 """Test signal generator: the discriminator signal of a tower sending control messages."""
 import numpy as np
 

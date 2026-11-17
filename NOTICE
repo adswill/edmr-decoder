@@ -1,0 +1,13 @@
+edmr-decoder
+Copyright (c) 2026 Kristijonas Adomaitis (adswill). All rights reserved.
+
+The eDMR burst format, channel coding and message layout used here were
+worked out by the author from off-air recordings. This decoder, its source
+code and its documentation are the author's own work.
+
+Use is governed by the edmr-decoder Source Licence in LICENSE. Copying,
+redistributing, porting to another language, or publishing changed versions
+is not permitted without written permission. This NOTICE and the copyright
+lines in each file must be kept.
+
+Source: https://github.com/adswill/edmr-decoder
